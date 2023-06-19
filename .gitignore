@@ -2,3 +2,4 @@ makefile
 .env
 Dockerfile
 .dockerignore
+__pycache__
