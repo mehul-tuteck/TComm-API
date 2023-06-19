@@ -1,5 +1,22 @@
 import re
 
+from models.User import User as UserModel
+from schemas.user import User
+
+async def create_new_user(user : User) -> UserModel :
+
+      return UserModel(
+        first_name = user.first_name,
+        last_name = user.last_name,
+        email = user.email,
+        phone = user.phone,
+        password = user.password,
+        address = user.address,
+        age = user.age,
+        gender = user.gender,
+        is_active = False
+    )
+
 async def get_user_by_id():
     return 
 

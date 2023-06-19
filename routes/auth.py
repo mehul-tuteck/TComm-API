@@ -2,15 +2,14 @@ from fastapi import APIRouter,Response
 from email_validator import validate_email,EmailNotValidError
 
 
-from Types.user import User
+from schemas.user import UserIn
 from utils.response import SuccessResponse,ErrorResponse,ServerError,NotFoundError
-from utils.user import validate_password,get_user_by_credentials
-
+from utils.user import validate_password,get_user_by_credentials,create_new_user
 
 router = APIRouter(prefix="/api/v1")
 
 @router.post("/register")
-async def register(user : User):
+async def register(user : UserIn):
     try:
       
         if not (user.email and user.phone):
@@ -24,6 +23,9 @@ async def register(user : User):
     
         if get_user_by_credentials(ph=user.phone, email=user.email):
             return ErrorResponse(data=None,client_msg="A user with the same phone number/email ID already exists!",dev_msg="User already exists!")
+
+        new_user = create_new_user(user=user)
+        
 
         
         return SuccessResponse(data=None,client_msg="You are successfully registered!",dev_msg="Registration Successful!")

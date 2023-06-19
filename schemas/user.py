@@ -1,6 +1,6 @@
 from pydantic import BaseModel,EmailStr,constr
 
-class User(BaseModel):
+class UserIn(BaseModel):
     first_name : str
     last_name : str
     email : EmailStr | None = None
@@ -9,6 +9,8 @@ class User(BaseModel):
     age : int | None = None
     gender : str | None = None
     address : constr(strip_whitespace=True) | None = None
-  
+    
+    class Config:
+        orm_mode = True
 
 
