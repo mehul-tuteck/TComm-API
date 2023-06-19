@@ -1,9 +1,9 @@
 import re
 
 from models.User import User as UserModel
-from schemas.user import User
+from schemas.user import UserIn
 
-async def create_new_user(user : User) -> UserModel :
+async def create_new_user(user : UserIn) -> UserModel :
 
       return UserModel(
         first_name = user.first_name,

@@ -5,6 +5,7 @@ from email_validator import validate_email,EmailNotValidError
 from schemas.user import UserIn
 from utils.response import SuccessResponse,ErrorResponse,ServerError,NotFoundError
 from utils.user import validate_password,get_user_by_credentials,create_new_user
+from config.db import Session
 
 router = APIRouter(prefix="/api/v1")
 
