@@ -25,8 +25,7 @@ async def register(user : User):
         if get_user_by_credentials(ph=user.phone, email=user.email):
             return ErrorResponse(data=None,client_msg="A user with the same phone number/email ID already exists!",dev_msg="User already exists!")
 
-
- 
+        
         return SuccessResponse(data=None,client_msg="You are successfully registered!",dev_msg="Registration Successful!")
     
     except Exception as e:
