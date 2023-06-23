@@ -1,11 +1,13 @@
 from fastapi import APIRouter,Response
 from email_validator import validate_email,EmailNotValidError
 
-
-from schemas.user import UserIn
+from models.User import User as UserModel;
+from schemas.userDTO import UserIn
 from utils.response import SuccessResponse,ErrorResponse,ServerError,NotFoundError
 from utils.user import validate_password,get_user_by_credentials,create_new_user
+from utils.queries import fetch_user
 from config.db import Session
+from utils.token_handler import create_access_token;
 
 router = APIRouter(prefix="/api/v1")
 
@@ -64,9 +66,23 @@ async def resend_otp():
 
 
 @router.post("/login")
-async def login():
+async def login(requestedUser: UserIn):
     try:
-        return SuccessResponse(data=None,client_msg="You are successfully registered!",dev_msg="Registration Successful!")
+       
+        userObjFromDB = fetch_user(inputEmail = requestedUser.email, inputPhone = requestedUser.phone)
+       # userObj = get_user_by_credentials(ph=requestedUser.phone, email=requestedUser.email) 
+    
+        if userObjFromDB:
+           # print("fetched_password: "+userObjFromDB[0].password);
+            #print("requested_password: "+requestedUser.password);
+            if userObjFromDB[0].password == requestedUser.password :
+               token = create_access_token(userDetails = userObjFromDB[0]);
+
+               return SuccessResponse(data=token, client_msg="You are successfully logged in!", dev_msg="LogIn Successful!")
+            else:
+                return ErrorResponse(data=[], client_msg="Password did not match!", dev_msg="Password missmatched!");
+        else:
+            return ErrorResponse(client_msg="Error occurred", dev_msg="Error!")
     
     except Exception as e:
         return ServerError(err=e,errMsg=str(e))
