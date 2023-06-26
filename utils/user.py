@@ -1,7 +1,7 @@
 import re
 
 from models.User import User as UserModel
-from schemas.user import UserIn
+from schemas.userDTO import UserIn
 
 async def create_new_user(user : UserIn) -> UserModel :
 
@@ -16,7 +16,6 @@ async def create_new_user(user : UserIn) -> UserModel :
         gender = user.gender,
         is_active = False
     )
-
 async def get_user_by_id():
     return 
 

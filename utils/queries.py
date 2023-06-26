@@ -1,10 +1,21 @@
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, text
-from sqlalchemy.dialects.postgresql import UUID
-from config.db import Base
+from config.db import Base, engine, Session, session
+from sqlalchemy import select, or_
+from models.User import User as UserModel
+def generate_tb():
+   Base.metadata.create_all(engine)
 
 
-class User(Base):
-    __tablename__ = "t_users"
+def fetch_user(inputEmail: str, inputPhone: int):
+   fetchedUserQuery = select(UserModel).where(
+        (UserModel.email == inputEmail) |
+        (UserModel.phone == inputPhone)
+   );
+   fetchedUser = session.execute(fetchedUserQuery).fetchone()
+   return fetchedUser
+"""
+def insert_tb():
+       with Session(engine) as session:
+
 
     id = Column(UUID, primary_key=True, server_default=text("gen_random_uuid()"))
     first_name = Column(String, nullable=False)
@@ -20,8 +31,4 @@ class User(Base):
     created_at = Column(DateTime, nullable=False, server_default=text("now()"))
     updated_by = Column(String)
     updated_at = Column(DateTime)
-
-
-
-   
- 
+"""    
