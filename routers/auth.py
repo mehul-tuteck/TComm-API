@@ -104,22 +104,20 @@ async def forgot_password():
 async def reset_password(request: Request):
     try:
         user_id = request.state.user_id;
-        #print("Request Body =")
         request_body_data = await request.json();
         new_password = request_body_data.get("new_password");
-        #print(new_password);
-        #new_password = request.body.new_password;
-       # print(new_password);
-        if user_id:
+       
+        if user_id and new_password:
             user = fetch_user_with_id(user_id);
             if user:
                 set_new_password(user_id, new_password);
             else:
-                return ErrorResponse(client_msg= "", dev_msg= "Fetch user id from token!");
+                return ErrorResponse(client_msg= "User not exists!", dev_msg= "User not exists with given user id!");
         else:
-            return ErrorResponse(client_msg="User Id missing!", dev_msg="Fetch user id from token!");
-        #print(user_id);
+            return ErrorResponse(client_msg="Please logged in to reset your password!", dev_msg="Fetch user id from token and new_password from request body!");
+        
         return SuccessResponse(data=user_id,client_msg="You are successfully registered!", dev_msg="Registration Successful!")
+    
     except Exception as e:
         return ServerError(err=e,errMsg=str(e))
 
