@@ -1,17 +1,17 @@
-
-from dotenv import load_dotenv
-#from models import User
+from fastapi import FastAPI;
+from dotenv import load_dotenv;
 load_dotenv()
+from routers import mount_routes;
+from utils import queries;
 
-from utils import queries
-
-from fastapi import FastAPI
-
-from routes import routes
-
+from fastapi.middleware.cors import CORSMiddleware;
+from middleware.auth import auth_middleware
 
 app = FastAPI()
-routes.Routes(app)
+
+mount_routes.Routes(app)
+
+#call the method while generating new table in db using sqlalchemy ORM
 
 
 #queries.generate_tb()

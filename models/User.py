@@ -2,11 +2,13 @@ from sqlalchemy import BigInteger, Boolean, Column, DateTime, Enum, ForeignKey, 
 from sqlalchemy.dialects.postgresql import UUID
 from config.db import Base
 
+#gen_random_uuid()
+#uuid_generate_v4()
 
 class User(Base):
     __tablename__ = "t_users"
 
-    id = Column(UUID, primary_key=True, server_default=text("gen_random_uuid()"))
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     email = Column(String)

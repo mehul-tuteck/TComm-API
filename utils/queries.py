@@ -1,5 +1,5 @@
 from config.db import Base, engine, Session, session
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, update
 from models.User import User as UserModel
 def generate_tb():
    Base.metadata.create_all(engine)
@@ -12,6 +12,28 @@ def fetch_user(inputEmail: str, inputPhone: int):
    );
    fetchedUser = session.execute(fetchedUserQuery).fetchone()
    return fetchedUser
+
+def fetch_user_with_id(id : str):
+    query = select(UserModel).where(
+       (UserModel.id == id)
+    );
+    user = session.execute(query).fetchone();
+    return user;
+
+def set_new_password(id: str, new_password: str):
+   try:
+      query = update(UserModel).where(
+         UserModel.id == id
+      ).values(
+         password = new_password 
+         );
+      change_password = session.execute(query);
+      session.commit(); #commit the changes into database
+      return change_password;
+   except Exception as e :
+      print(str(e));
+   
+    
 """
 def insert_tb():
        with Session(engine) as session:
