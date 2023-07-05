@@ -1,19 +1,21 @@
 from fastapi import APIRouter, Response, Header;
-from email_validator import validate_email,EmailNotValidError
+from email_validator import validate_email, EmailNotValidError
 
 from models.User import User as UserModel;
 from schemas.userDTO import UserIn
+
 from utils.response import SuccessResponse,ErrorResponse,ServerError,NotFoundError
 from utils.user import validate_password,get_user_by_credentials,create_new_user
-from utils.queries import fetch_user, fetch_user_with_id, set_new_password
+from utils.queries import fetch_user_by_email_or_phone, fetch_user_with_id, set_new_password
 from config.db import Session
 from utils.token_handler import create_access_token;
+
 from starlette.requests import Request;
 
 
 
 
-router = APIRouter(prefix="/authorization_authentication")
+router = APIRouter(prefix="/api/auth")
 
 
 
@@ -23,7 +25,7 @@ async def register(user : UserIn):
       
         if not (user.email and user.phone):
             return ErrorResponse(data=None,client_msg="Your E-mail ID or phone is incorrect/Not entered!",dev_msg="Email/Phone field is empty")
-      
+        
         if not validate_email(email=user.email):
             return ErrorResponse(data=EmailNotValidError,client_msg="Your E-mail ID is invalid!",dev_msg="Email validation did not pass")
       
@@ -34,8 +36,6 @@ async def register(user : UserIn):
             return ErrorResponse(data=None,client_msg="A user with the same phone number/email ID already exists!",dev_msg="User already exists!")
 
         new_user = create_new_user(user=user)
-        
-
         
         return SuccessResponse(data=None,client_msg="You are successfully registered!",dev_msg="Registration Successful!")
     
@@ -76,50 +76,75 @@ async def login(requestedUser: UserIn):
     
     try:
 
-        userObjFromDB = fetch_user(inputEmail = requestedUser.email, inputPhone = requestedUser.phone)
+        userObjFromDB = fetch_user_by_email_or_phone(inputEmail = requestedUser.email, inputPhone = requestedUser.phone);
     
-        if userObjFromDB:
-            if userObjFromDB[0].password == requestedUser.password :
-               token = create_access_token(userDetails = userObjFromDB[0]);
-               return SuccessResponse(data=token, client_msg="You are successfully logged in!", dev_msg="LogIn Successful!")
-            else:
-                return ErrorResponse(client_msg="Password did not match!", dev_msg="Password missmatched!");
-        else:
-            return ErrorResponse(client_msg="User not found with given credential", dev_msg="User not found with given credential!")
+        if not userObjFromDB:
+            return ErrorResponse(client_msg = "User not found with given credential!", dev_msg = "User not found with given credential!");
+    
+        if userObjFromDB[0].password != requestedUser.password :
+            return ErrorResponse(data=[], client_msg = "Password did not match!", dev_msg = "Password missmatched!"); 
+      
+        token = create_access_token(userDetails = userObjFromDB[0]);
+
+        return SuccessResponse(data = token, client_msg = "You are successfully logged in", dev_msg = "LogIn Successful");
     
     except Exception as e:
-        return ServerError(err=e,errMsg=str(e))
+        return ServerError(err = e, errMsg = str(e))
  
 
-@router.post("/password/forgot")
-async def forgot_password():
+@router.patch("/password/forgotten")
+async def forgotten_password(request_body : UserIn):
     try:
-        return SuccessResponse(data=None,client_msg="You are successfully registered!",dev_msg="Registration Successful!")
+
+        if not (request_body.email or request_body.phone):
+            return ErrorResponse(client_msg = "Email or phone number required to identify user.", dev_msg = "Email or phone number required to identify user.");
     
+        user = fetch_user_by_email_or_phone(request_body.email, request_body.phone);
+
+        if not user:
+            return ErrorResponse(client_msg = "User not found!", dev_msg = "User not present with provided identifier!");
+    
+        if not request_body.password :
+            return ErrorResponse(client_msg = "Please enter a new password to set.", dev_msg = "Please enter a new password to set."); 
+    
+        changed_password =  set_new_password(user[0].id, request_body.password);
+        #user_new = UserIn();
+        #user_new = user[0];
+        
+        print(user[0]);
+        return SuccessResponse(data = changed_password, client_msg="Password changed successfully!", dev_msg="Password changed successfully!");
+
     except Exception as e:
         return ServerError(err=e,errMsg=str(e))
     
 
 @router.patch("/password/reset")
-async def reset_password(request: Request):
+async def reset_password(request: Request, userIn: UserIn):
+
     try:
+
         user_id = request.state.user_id;
-        request_body_data = await request.json();
-        new_password = request_body_data.get("new_password");
+        #request_body_data = await request.json();
+        #new_password = request_body_data.get("password");
+        new_password = userIn.password;
        
-        if user_id and new_password:
-            user = fetch_user_with_id(user_id);
-            if user:
-                set_new_password(user_id, new_password);
-            else:
-                return ErrorResponse(client_msg= "User not exists!", dev_msg= "User not exists with given user id!");
-        else:
-            return ErrorResponse(client_msg="Please logged in to reset your password!", dev_msg="Fetch user id from token and new_password from request body!");
-        
-        return SuccessResponse(data=user_id,client_msg="You are successfully registered!", dev_msg="Registration Successful!")
+        if not user_id and new_password:
+            return ErrorResponse(client_msg = "Please enter the new password !", dev_msg = "Fetch user id from token and new_password from request body!");
+    
+        user = fetch_user_with_id(user_id);
+
+        if not user:
+            return ErrorResponse(client_msg= "User not exists!", dev_msg= "User not exists with given user id!");
+    
+        reset_password = set_new_password(user_id, new_password);
+            
+        return SuccessResponse(data = reset_password, client_msg = "Password successfully setted.", dev_msg = "Passward successfully re-setted with new password");
+    
+    except ValueError as ve:
+        return ErrorResponse(client_msg = "Invalid request data!", dev_msg = str(ve));
     
     except Exception as e:
-        return ServerError(err=e,errMsg=str(e))
+        return ServerError(err = e, errMsg = str(e));
 
 
 @router.post("/logout")

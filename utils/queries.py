@@ -1,11 +1,14 @@
 from config.db import Base, engine, Session, session
+
 from sqlalchemy import select, or_, update
+
 from models.User import User as UserModel
+
 def generate_tb():
    Base.metadata.create_all(engine)
 
 
-def fetch_user(inputEmail: str, inputPhone: int):
+def fetch_user_by_email_or_phone(inputEmail: str, inputPhone: int):
    fetchedUserQuery = select(UserModel).where(
         (UserModel.email == inputEmail) |
         (UserModel.phone == inputPhone)
