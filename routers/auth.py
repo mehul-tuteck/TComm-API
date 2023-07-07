@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Response, Header;
+from fastapi import APIRouter, Response, Header, Depends;
 from email_validator import validate_email, EmailNotValidError
+from fastapi.security import OAuth2PasswordBearer;
 
 from models.User import User as UserModel;
 from schemas.userDTO import UserIn
@@ -8,16 +9,18 @@ from utils.response import SuccessResponse,ErrorResponse,ServerError,NotFoundErr
 from utils.user import validate_password,get_user_by_credentials,create_new_user
 from utils.queries import fetch_user_by_email_or_phone, fetch_user_with_id, set_new_password
 from config.db import Session
-from utils.token_handler import create_access_token;
+from utils.token_handler import create_access_token, decode_token, encode_token, modified_exp;
 
 from starlette.requests import Request;
+from datetime import datetime, timedelta;
+
 
 
 
 
 router = APIRouter(prefix="/api/auth")
 
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl= '/login');
 
 @router.post("/register")
 async def register(user : UserIn):
@@ -111,7 +114,6 @@ async def forgotten_password(request_body : UserIn):
         #user_new = UserIn();
         #user_new = user[0];
         
-        print(user[0]);
         return SuccessResponse(data = changed_password, client_msg="Password changed successfully!", dev_msg="Password changed successfully!");
 
     except Exception as e:
@@ -124,17 +126,18 @@ async def reset_password(request: Request, userIn: UserIn):
     try:
 
         user_id = request.state.user_id;
+        
         #request_body_data = await request.json();
         #new_password = request_body_data.get("password");
         new_password = userIn.password;
        
         if not user_id and new_password:
-            return ErrorResponse(client_msg = "Please enter the new password !", dev_msg = "Fetch user id from token and new_password from request body!");
+            return ErrorResponse(data = [], client_msg = "Please enter the password !", dev_msg = "Fetch user id from token and new_password from request body!");
     
         user = fetch_user_with_id(user_id);
 
         if not user:
-            return ErrorResponse(client_msg= "User not exists!", dev_msg= "User not exists with given user id!");
+            return ErrorResponse(data = [], client_msg= "User not exists!", dev_msg= "User not exists with given user id!");
     
         reset_password = set_new_password(user_id, new_password);
             
@@ -148,11 +151,18 @@ async def reset_password(request: Request, userIn: UserIn):
 
 
 @router.post("/logout")
-async def logout():
+async def logout(auth_token : str = Depends(oauth2_scheme)):
     try:
-        return SuccessResponse(data=None,client_msg="You are successfully registered!",dev_msg="Registration Successful!")
-    
+
+        decoded_token = decode_token(auth_token);
+        decoded_token['exp'] = datetime.utcnow() + timedelta(milliseconds = 1);
+        new_token = encode_token(decoded_token);
+        new_auth_token = 'Bearer '+new_token;
+
+        return SuccessResponse(data = new_auth_token, client_msg = "You have successfully logged out.", dev_msg = "User logged out.");
+
     except Exception as e:
+
         return ServerError(err=e,errMsg=str(e))
    
    
