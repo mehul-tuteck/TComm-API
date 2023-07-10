@@ -4,17 +4,20 @@ from fastapi.security import OAuth2PasswordBearer;
 
 from models.User import User as UserModel;
 from schemas.userDTO import UserIn
+from utils.security_utils import generate_otp;
 
 from utils.response import SuccessResponse,ErrorResponse,ServerError,NotFoundError
 from utils.user import validate_password,get_user_by_credentials,create_new_user
-from utils.queries import fetch_user_by_email_or_phone, fetch_user_with_id, set_new_password
+from utils.queries_user import fetch_user_by_email_or_phone, fetch_user_with_id, set_new_password, insert_user
+from utils.queries_user_cache import insert_user_cache, fetch_cache_user_by_email_or_phone, fetch_cache_user_with_id
 from config.db import Session
 from utils.token_handler import create_access_token, decode_token, encode_token, modified_exp;
+from models.User import UserCache;
 
 from starlette.requests import Request;
 from datetime import datetime, timedelta;
 
-
+import random
 
 
 
@@ -23,41 +26,60 @@ router = APIRouter(prefix="/api/auth")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl= '/login');
 
 @router.post("/register")
-async def register(user : UserIn):
+async def register(userDetails : UserIn):
+   
+   
     try:
-      
-        if not (user.email and user.phone):
-            return ErrorResponse(data=None,client_msg="Your E-mail ID or phone is incorrect/Not entered!",dev_msg="Email/Phone field is empty")
+        if not (userDetails.email and userDetails.phone):
+            return ErrorResponse(data = None, client_msg = "Your E-mail ID or phone is incorrect/Not entered!", dev_msg = "Email/Phone field is empty");
+        if not validate_email(email = userDetails.email):
+            return ErrorResponse(data = EmailNotValidError, client_msg = "Your E-mail ID is invalid!", dev_msg = "Email validation did not pass");
+        if not userDetails.password:
+            return ErrorResponse(data = None, client_msg = "Please provide a valid password!", dev_msg = "Password missing from client side!");
+        if not validate_password(password = userDetails.password):
+           return ErrorResponse(data = None, client_msg = "Your E-mail ID is invalid!", dev_msg = "Email validation did not pass");
+        if fetch_cache_user_by_email_or_phone(inputEmail = userDetails.email, inputPhone = userDetails.phone):
+            return ErrorResponse(data = None, client_msg = "A user with the same phone number/email ID already exists!", dev_msg = "User already exists!");
         
-        if not validate_email(email=user.email):
-            return ErrorResponse(data=EmailNotValidError,client_msg="Your E-mail ID is invalid!",dev_msg="Email validation did not pass")
-      
-        if not validate_password(password=user.password):
-            return ErrorResponse(data=None,client_msg="Your E-mail ID is invalid!",dev_msg="Email validation did not pass")
-    
-        if get_user_by_credentials(ph=user.phone, email=user.email):
-            return ErrorResponse(data=None,client_msg="A user with the same phone number/email ID already exists!",dev_msg="User already exists!")
+        insert_user_cache(userDetails);
 
-        new_user = create_new_user(user=user)
+        new_user = fetch_cache_user_by_email_or_phone(inputEmail = userDetails.email, inputPhone = userDetails.phone);
+
+        if not new_user:
+            return ErrorResponse(data = None, client_msg = "Please, retry to register!", dev_msg = "User details not inserted into cache table.");
         
-        return SuccessResponse(data=None,client_msg="You are successfully registered!",dev_msg="Registration Successful!")
-    
+        return SuccessResponse(data = new_user[0], client_msg = "Information are collected.", dev_msg = "Informations are inserted, next step verify otp");
+
     except Exception as e:
 
-        return ServerError(err=e,errMsg=str(e))
+        return ServerError(err = e, errMsg = str(e));
+    
 
 
-
-@router.get("/OTP")
-async def get_otp():
+@router.post("/OTP/generate")
+async def get_otp(userDetails : UserIn):
     try:
+        if not userDetails.id :
+            return ErrorResponse(data = None, client_msg = "Enter details to get otp.", dev_msg = "collected user id from cache table.");
+        
+        cache_user = fetch_cache_user_with_id(id = userDetails.id);
+
+        if not cache_user :
+            return ErrorResponse(data = None, client_msg = "Enter details to get otp.", dev_msg = "collected user id from cache table.");
+    
+        otp = generate_otp();
+        
+        
+        print("The otp is", otp);
+        
+
         return SuccessResponse(data=None,client_msg="You are successfully registered!",dev_msg="Registration Successful!")
     
     except Exception as e:
         return ServerError(err=e,errMsg=str(e))
    
 
-@router.post("/OTP")
+@router.post("/OTP/verify")
 async def verify_otp():
     try:
         return SuccessResponse(data=None,client_msg="You are successfully registered!",dev_msg="Registration Successful!")
