@@ -2,8 +2,12 @@ import re
 
 from models.User import User as UserModel
 from schemas.userDTO import UserIn
+from utils.security_utils import generate_hash_password;
 
 async def create_new_user(user : UserIn) -> UserModel :
+      print("hash_pwd")
+      print(hash_pwd)
+      print(user.password)
 
       return UserModel(
         first_name = user.first_name,

@@ -8,7 +8,8 @@ class UserIn(BaseModel):
     last_name : str  | None = None
     email : EmailStr | None = None
     phone : constr(strip_whitespace=True) | None = None
-    password : constr(min_length=8, strip_whitespace=True) #regex = password_pattern) 
+    password : constr(min_length=8, strip_whitespace=True) | None = None #regex = password_pattern) 
+    otp : int | None = None
     age : int | None = None
     gender : str | None = None
     address : constr(strip_whitespace=True) | None = None
