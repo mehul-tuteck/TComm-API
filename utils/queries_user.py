@@ -1,6 +1,6 @@
 from config.db import Base, engine, Session, session;
 
-from sqlalchemy import select, or_, update;
+from sqlalchemy import select, or_, update, delete;
 
 from models.User import User as UserModel;
 from models.User import UserCache;
@@ -68,8 +68,11 @@ def insert_user(userDetails : UserIn):
       #return inserted_record;
 
 
-
-           
+def delete_with_email(inputEmail : str, modelClass : any):
+   stmt = delete( modelClass ).where( modelClass.email == inputEmail );
+   session.execute(stmt);
+   session.commit();
+               
 
 
 

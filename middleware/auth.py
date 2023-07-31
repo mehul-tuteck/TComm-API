@@ -23,7 +23,6 @@ class auth_middleware(BaseHTTPMiddleware):
         response = await call_next(request);
         
         return response
-      
       else:
         return await call_next(request);
   

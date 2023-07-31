@@ -51,3 +51,12 @@ def fetch_cache_user_with_id(id : str):
     );
     cache_user = session.execute(query).fetchone();
     return cache_user;
+
+def update_with_otp(userDetails : UserIn) : 
+    query = update(UserCache).where(
+        UserCache.id == userDetails.id
+    ).values(
+        otp = userDetails.otp
+    );
+    session.execute(query);
+    session.commit();
